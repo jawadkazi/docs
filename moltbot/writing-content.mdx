@@ -1,0 +1,173 @@
+<!--
+  TODO: Add this page to the navigation in `docs/docs.json`.
+  You can add a new group like this under the "Moltbot" tab:
+  {
+    "group": "Content Authoring",
+    "pages": [
+      "moltbot/writing-content"
+    ]
+  }
+-->
+---
+title: 'Writing Content'
+description: 'How to use Markdown, code blocks, images, and other components in your documentation'
+icon: 'pencil'
+---
+
+## Overview
+
+Moltbot's documentation is written in MDX, which is Markdown with the ability to use JSX components. This allows for rich, interactive, and beautifully formatted content.
+
+## Text Formatting
+
+### Titles and Subtitles
+
+Use Markdown's hash symbols (`#`) to create titles and subtitles. These automatically generate anchors and appear in the table of contents on the right.
+
+```md
+## Section Title
+### Subsection Title
+```
+
+<Tip>
+Use a single `#` for the page title in the frontmatter, and start with `##` for section titles within the page content.
+</Tip>
+
+### Basic Styling
+
+Standard Markdown syntax is supported for text styling.
+
+| Style         | Syntax            | Result          |
+| ------------- | ----------------- | --------------- |
+| Bold          | `**bold text**`   | **bold text**   |
+| Italic        | `_italic text_`   | _italic text_   |
+| Strikethrough | `~strikethrough~` | ~strikethrough~ |
+
+### Links
+
+Create links using the `[link text](url)` syntax. For internal links to other pages in the documentation, use root-relative paths.
+
+```md
+[Link to Moltbot Home](/moltbot)
+[External link to GitHub](https://github.com/moltbot/moltbot)
+```
+
+### Blockquotes
+
+Use the `>` character to create blockquotes for emphasizing text or quoting sources.
+
+> To create a blockquote, add a `>` in front of a paragraph.
+
+```md
+> To create a blockquote, add a `>` in front of a paragraph.
+```
+
+## Code Blocks
+
+### Inline Code
+
+For short code snippets, variable names, or file paths like `moltbot.json`, use single backticks (`` ` ``).
+
+```md
+The configuration is stored in `~/.clawdbot/moltbot.json`.
+```
+
+### Fenced Code Blocks
+
+For longer code examples, use three backticks (```` ``` ````) and specify the language for syntax highlighting. You can also add a filename.
+
+````md
+```bash MyScript.sh
+# Install Moltbot globally
+npm install -g moltbot@latest
+# Onboard and install the service
+moltbot onboard --install-daemon
+```
+````
+
+Here's how it renders:
+
+```bash MyScript.sh
+# Install Moltbot globally
+npm install -g moltbot@latest
+# Onboard and install the service
+moltbot onboard --install-daemon
+```
+
+## Images and Embeds
+
+### Images
+
+You can include images using standard Markdown syntax or an HTML `<img>` tag for more control over styling.
+
+<Tabs>
+  <Tab title="Markdown">
+    ```md
+    ![Moltbot Logo](/logo/light.svg)
+    ```
+  </Tab>
+  <Tab title="HTML">
+    ```html
+    <img
+      src="/images/whatsapp-clawd.jpg"
+      alt="Moltbot"
+      width="300"
+      style={{ borderRadius: '0.5rem' }}
+    />
+    ```
+  </Tab>
+</Tabs>
+
+### Embeds
+
+Use HTML `<iframe>` tags to embed content like YouTube videos directly into your documentation.
+
+```html
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  title="YouTube video player"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+  style={{ width: '100%', borderRadius: '0.5rem' }}
+></iframe>
+```
+
+## Reusable Snippets
+
+To maintain consistency and reduce duplication, you can use reusable snippets. Create a file in the `snippets` directory (e.g., `snippets/warning-note.mdx`) and then include it in any page.
+
+**Example `snippets/warning-note.mdx`:**
+```mdx
+<Warning>
+  This is an experimental feature. Use with caution in production environments.
+</Warning>
+```
+
+**To use it in a page:**
+```mdx
+<Snippet file="warning-note.mdx" />
+```
+
+This will render the content of the snippet file.
+
+## Custom Components
+
+Mintlify provides a rich set of custom components to make your documentation more effective and visually appealing.
+
+<CardGroup cols={2}>
+  <Card title="Callouts" icon="bullhorn">
+    Use `<Info>`, `<Warning>`, `<Tip>`, and `<Note>` to highlight important information.
+  </Card>
+  <Card title="Tabs" icon="window-restore">
+    Use `<Tabs>` and `<Tab>` to display content in a tabbed interface, useful for showing information for different platforms or configurations.
+  </Card>
+  <Card title="Accordions" icon="list-ul">
+    Use `<AccordionGroup>` and `<Accordion>` to create collapsible sections of content.
+  </Card>
+  <Card title="Steps" icon="list-ol">
+    Use `<Steps>` and `<Step>` to create numbered, step-by-step guides.
+  </Card>
+</CardGroup>
