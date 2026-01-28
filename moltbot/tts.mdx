@@ -1,0 +1,271 @@
+---
+title: "Text-to-Speech"
+description: "Text-to-speech (TTS) for outbound replies"
+icon: "volume-high"
+---
+
+Moltbot can convert outbound replies into audio using ElevenLabs, OpenAI, or Edge TTS. It works anywhere Moltbot can send audio; Telegram gets a round voice-note bubble.
+
+## Supported services
+
+<CardGroup cols={3}>
+  <Card title="ElevenLabs" icon="e">
+    Primary or fallback provider
+  </Card>
+  <Card title="OpenAI" icon="microchip">
+    Primary or fallback provider; also used for summaries
+  </Card>
+  <Card title="Edge TTS" icon="edge">
+    Default when no API keys; uses Microsoft Edge's neural TTS
+  </Card>
+</CardGroup>
+
+### Edge TTS notes
+
+Edge TTS uses Microsoft Edge's online neural TTS service via the `node-edge-tts` library. It's a hosted service (not local), uses Microsoft's endpoints, and does not require an API key.
+
+<Warning>
+Because Edge TTS is a public web service without a published SLA or quota, treat it as best-effort. If you need guaranteed limits and support, use OpenAI or ElevenLabs.
+</Warning>
+
+## Optional API keys
+
+If you want OpenAI or ElevenLabs:
+- `ELEVENLABS_API_KEY` (or `XI_API_KEY`)
+- `OPENAI_API_KEY`
+
+<Info>
+Edge TTS does **not** require an API key. If no API keys are found, Moltbot defaults to Edge TTS (unless disabled via `messages.tts.edge.enabled=false`).
+</Info>
+
+## Is it enabled by default?
+
+No. Auto‑TTS is **off** by default. Enable it in config with `messages.tts.auto` or per session with `/tts always` (alias: `/tts on`).
+
+Edge TTS **is** enabled by default once TTS is on, and is used automatically when no OpenAI or ElevenLabs API keys are available.
+
+## Configuration
+
+TTS config lives under `messages.tts` in `moltbot.json`.
+
+### Minimal config (enable + provider)
+
+```json
+{
+  "messages": {
+    "tts": {
+      "auto": "always",
+      "provider": "elevenlabs"
+    }
+  }
+}
+```
+
+### OpenAI primary with ElevenLabs fallback
+
+```json
+{
+  "messages": {
+    "tts": {
+      "auto": "always",
+      "provider": "openai",
+      "summaryModel": "openai/gpt-4.1-mini",
+      "modelOverrides": {
+        "enabled": true
+      },
+      "openai": {
+        "apiKey": "openai_api_key",
+        "model": "gpt-4o-mini-tts",
+        "voice": "alloy"
+      },
+      "elevenlabs": {
+        "apiKey": "elevenlabs_api_key",
+        "baseUrl": "https://api.elevenlabs.io",
+        "voiceId": "voice_id",
+        "modelId": "eleven_multilingual_v2",
+        "voiceSettings": {
+          "stability": 0.5,
+          "similarityBoost": 0.75,
+          "style": 0.0,
+          "useSpeakerBoost": true,
+          "speed": 1.0
+        }
+      }
+    }
+  }
+}
+```
+
+### Edge TTS primary (no API key)
+
+```json
+{
+  "messages": {
+    "tts": {
+      "auto": "always",
+      "provider": "edge",
+      "edge": {
+        "enabled": true,
+        "voice": "en-US-MichelleNeural",
+        "lang": "en-US",
+        "outputFormat": "audio-24khz-48kbitrate-mono-mp3",
+        "rate": "+10%",
+        "pitch": "-5%"
+      }
+    }
+  }
+}
+```
+
+### Only reply with audio after an inbound voice note
+
+```json
+{
+  "messages": {
+    "tts": {
+      "auto": "inbound"
+    }
+  }
+}
+```
+
+## Configuration options
+
+<AccordionGroup>
+  <Accordion title="Auto-TTS modes">
+    | Mode | Description |
+    |------|-------------|
+    | `off` | Disabled |
+    | `always` | Always send audio |
+    | `inbound` | Only sends audio after an inbound voice note |
+    | `tagged` | Only sends audio when the reply includes `[[tts]]` tags |
+  </Accordion>
+  <Accordion title="Provider selection">
+    | Setting | Description |
+    |---------|-------------|
+    | `provider` | `"elevenlabs"`, `"openai"`, or `"edge"` |
+    
+    If `provider` is **unset**, Moltbot prefers `openai` (if key), then `elevenlabs` (if key), otherwise `edge`.
+  </Accordion>
+  <Accordion title="ElevenLabs settings">
+    | Setting | Description |
+    |---------|-------------|
+    | `elevenlabs.apiKey` | API key (falls back to `ELEVENLABS_API_KEY`) |
+    | `elevenlabs.baseUrl` | Override ElevenLabs API base URL |
+    | `elevenlabs.voiceId` | Voice ID to use |
+    | `elevenlabs.modelId` | Model ID (e.g., `eleven_multilingual_v2`) |
+    | `elevenlabs.voiceSettings.stability` | 0..1 |
+    | `elevenlabs.voiceSettings.similarityBoost` | 0..1 |
+    | `elevenlabs.voiceSettings.speed` | 0.5..2.0 (1.0 = normal) |
+  </Accordion>
+  <Accordion title="Edge TTS settings">
+    | Setting | Description |
+    |---------|-------------|
+    | `edge.enabled` | Allow Edge TTS usage (default `true`) |
+    | `edge.voice` | Edge neural voice name (e.g., `en-US-MichelleNeural`) |
+    | `edge.lang` | Language code (e.g., `en-US`) |
+    | `edge.outputFormat` | Output format (e.g., `audio-24khz-48kbitrate-mono-mp3`) |
+    | `edge.rate` / `edge.pitch` / `edge.volume` | Percent strings (e.g., `+10%`, `-5%`) |
+  </Accordion>
+  <Accordion title="Limits and timeouts">
+    | Setting | Description |
+    |---------|-------------|
+    | `maxTextLength` | Hard cap for TTS input (chars) |
+    | `timeoutMs` | Request timeout (ms) |
+    | `prefsPath` | Override the local prefs JSON path |
+  </Accordion>
+</AccordionGroup>
+
+## Model-driven overrides
+
+By default, the model **can** emit TTS directives for a single reply. When `messages.tts.auto` is `tagged`, these directives are required to trigger audio.
+
+Example reply payload:
+
+```
+Here you go.
+
+[[tts:provider=elevenlabs voiceId=pMsXgVXv3BLzUgSXRplE model=eleven_v3 speed=1.1]]
+[[tts:text]](laughs) Read the song once more.[[/tts:text]]
+```
+
+Disable all model overrides:
+
+```json
+{
+  "messages": {
+    "tts": {
+      "modelOverrides": {
+        "enabled": false
+      }
+    }
+  }
+}
+```
+
+## Output formats
+
+| Channel | Format | Details |
+|---------|--------|---------|
+| Telegram | Opus voice note | 48kHz / 64kbps (required for round bubble) |
+| Other channels | MP3 | 44.1kHz / 128kbps |
+| Edge TTS | Configurable | Uses `edge.outputFormat` |
+
+## Slash command usage
+
+There is a single command: `/tts`.
+
+<Note>
+**Discord note:** `/tts` is a built-in Discord command, so Moltbot registers `/voice` as the native command there. Text `/tts ...` still works.
+</Note>
+
+```bash
+/tts off
+/tts always
+/tts inbound
+/tts tagged
+/tts status
+/tts provider openai
+/tts limit 2000
+/tts summary off
+/tts audio Hello from Moltbot
+```
+
+## Auto-TTS behavior
+
+When enabled, Moltbot:
+- Skips TTS if the reply already contains media or a `MEDIA:` directive
+- Skips very short replies (< 10 chars)
+- Summarizes long replies when enabled using `summaryModel` or `agents.defaults.model.primary`
+- Attaches the generated audio to the reply
+
+## Flow diagram
+
+```
+Reply -> TTS enabled?
+  no  -> send text
+  yes -> has media / MEDIA: / short?
+          yes -> send text
+          no  -> length > limit?
+                   no  -> TTS -> attach audio
+                   yes -> summary enabled?
+                            no  -> send text
+                            yes -> summarize -> TTS -> attach audio
+```
+
+## Service links
+
+<CardGroup cols={2}>
+  <Card title="OpenAI TTS Guide" icon="book" href="https://platform.openai.com/docs/guides/text-to-speech">
+    Official documentation
+  </Card>
+  <Card title="ElevenLabs API" icon="book" href="https://elevenlabs.io/docs/api-reference/text-to-speech">
+    API reference
+  </Card>
+  <Card title="node-edge-tts" icon="github" href="https://github.com/SchneeHertz/node-edge-tts">
+    Edge TTS library
+  </Card>
+  <Card title="Microsoft Speech Formats" icon="microsoft" href="https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech#audio-outputs">
+    Output format reference
+  </Card>
+</CardGroup>

@@ -1,0 +1,59 @@
+---
+title: "Brave Search API"
+description: "Brave Search API setup for web_search"
+icon: "magnifying-glass"
+---
+
+Moltbot uses Brave Search as the default provider for `web_search`.
+
+## Get an API key
+
+<Steps>
+  <Step title="Create a Brave Search API account">
+    Go to [https://brave.com/search/api/](https://brave.com/search/api/) and create an account.
+  </Step>
+  <Step title="Choose the Data for Search plan">
+    In the dashboard, choose the **Data for Search** plan and generate an API key.
+  </Step>
+  <Step title="Store the key">
+    Store the key in config (recommended) or set `BRAVE_API_KEY` in the Gateway environment.
+  </Step>
+</Steps>
+
+## Config example
+
+```json
+{
+  "tools": {
+    "web": {
+      "search": {
+        "provider": "brave",
+        "apiKey": "BRAVE_API_KEY_HERE",
+        "maxResults": 5,
+        "timeoutSeconds": 30
+      }
+    }
+  }
+}
+```
+
+## Notes
+
+<Warning>
+The **Data for AI** plan is **not** compatible with `web_search`. You must use the **Data for Search** plan.
+</Warning>
+
+<Info>
+Brave provides a free tier plus paid plans; check the [Brave API portal](https://brave.com/search/api/) for current limits.
+</Info>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Perplexity Sonar" icon="searchengin" href="/moltbot/perplexity">
+    Alternative web search provider
+  </Card>
+  <Card title="Environment Variables" icon="sliders" href="/moltbot/environment">
+    Configure API keys via environment
+  </Card>
+</CardGroup>

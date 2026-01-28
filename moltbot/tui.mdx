@@ -1,0 +1,232 @@
+---
+title: "Terminal UI (TUI)"
+description: "Connect to the Gateway from any machine with the terminal interface"
+icon: "terminal"
+---
+
+The TUI provides a rich terminal interface for interacting with Moltbot. Connect to your Gateway from any machine and chat with your agents.
+
+## Quick start
+
+<Steps>
+  <Step title="Start the Gateway">
+    ```bash
+    moltbot gateway
+    ```
+  </Step>
+  <Step title="Open the TUI">
+    ```bash
+    moltbot tui
+    ```
+  </Step>
+  <Step title="Start chatting">
+    Type a message and press Enter.
+  </Step>
+</Steps>
+
+### Remote Gateway
+
+```bash
+moltbot tui --url ws://<host>:<port> --token <gateway-token>
+```
+
+Use `--password` if your Gateway uses password auth.
+
+## Interface overview
+
+| Element | Description |
+|---------|-------------|
+| **Header** | Connection URL, current agent, current session |
+| **Chat log** | User messages, assistant replies, system notices, tool cards |
+| **Status line** | Connection/run state (connecting, running, streaming, idle, error) |
+| **Footer** | Connection state + agent + session + model + think/verbose/reasoning + token counts + deliver |
+| **Input** | Text editor with autocomplete |
+
+## Mental model: agents + sessions
+
+<Info>
+- **Agents** are unique slugs (e.g., `main`, `research`). The Gateway exposes the list.
+- **Sessions** belong to the current agent.
+- Session keys are stored as `agent:<agentId>:<sessionKey>`.
+</Info>
+
+### Session handling
+
+- If you type `/session main`, the TUI expands it to `agent:<currentAgent>:main`.
+- If you type `/session agent:other:main`, you switch to that agent session explicitly.
+
+### Session scope
+
+| Scope | Behavior |
+|-------|----------|
+| `per-sender` (default) | Each agent has many sessions |
+| `global` | The TUI always uses the `global` session (the picker may be empty) |
+
+The current agent + session are always visible in the footer.
+
+## Sending + delivery
+
+Messages are sent to the Gateway; delivery to providers is **off by default**.
+
+Turn delivery on:
+
+<Tabs>
+  <Tab title="Slash command">
+    ```
+    /deliver on
+    ```
+  </Tab>
+  <Tab title="Settings panel">
+    Toggle in the Settings overlay
+  </Tab>
+  <Tab title="CLI flag">
+    ```bash
+    moltbot tui --deliver
+    ```
+  </Tab>
+</Tabs>
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message |
+| `Esc` | Abort active run |
+| `Ctrl+C` | Clear input (press twice to exit) |
+| `Ctrl+D` | Exit |
+| `Ctrl+L` | Model picker |
+| `Ctrl+G` | Agent picker |
+| `Ctrl+P` | Session picker |
+| `Ctrl+O` | Toggle tool output expansion |
+| `Ctrl+T` | Toggle thinking visibility (reloads history) |
+
+## Pickers + overlays
+
+<CardGroup cols={2}>
+  <Card title="Model Picker" icon="microchip">
+    List available models and set the session override
+  </Card>
+  <Card title="Agent Picker" icon="user">
+    Choose a different agent
+  </Card>
+  <Card title="Session Picker" icon="clock-rotate-left">
+    Shows only sessions for the current agent
+  </Card>
+  <Card title="Settings" icon="gear">
+    Toggle deliver, tool output expansion, and thinking visibility
+  </Card>
+</CardGroup>
+
+## Slash commands
+
+### Core commands
+
+```bash
+/help
+/status
+/agent <id>       # or /agents
+/session <key>    # or /sessions
+/model <provider/model>  # or /models
+```
+
+### Session controls
+
+```bash
+/think <off|minimal|low|medium|high>
+/verbose <on|full|off>
+/reasoning <on|off|stream>
+/usage <off|tokens|full>
+/elevated <on|off|ask|full>  # alias: /elev
+/activation <mention|always>
+/deliver <on|off>
+```
+
+### Session lifecycle
+
+```bash
+/new      # or /reset (reset the session)
+/abort    # abort the active run
+/settings
+/exit
+```
+
+<Note>
+Other Gateway slash commands (for example, `/context`) are forwarded to the Gateway and shown as system output.
+</Note>
+
+## Local shell commands
+
+- Prefix a line with `!` to run a local shell command on the TUI host.
+- The TUI prompts once per session to allow local execution; declining keeps `!` disabled for the session.
+- Commands run in a fresh, non-interactive shell in the TUI working directory (no persistent `cd`/env).
+- A lone `!` is sent as a normal message; leading spaces do not trigger local exec.
+
+## Tool output
+
+<AccordionGroup>
+  <Accordion title="How tool cards work">
+    - Tool calls show as cards with args + results
+    - `Ctrl+O` toggles between collapsed/expanded views
+    - While tools run, partial updates stream into the same card
+  </Accordion>
+  <Accordion title="History + streaming">
+    - On connect, the TUI loads the latest history (default 200 messages)
+    - Streaming responses update in place until finalized
+    - The TUI also listens to agent tool events for richer tool cards
+  </Accordion>
+</AccordionGroup>
+
+## Command-line options
+
+| Option | Description |
+|--------|-------------|
+| `--url <url>` | Gateway WebSocket URL (defaults to config or `ws://127.0.0.1:<port>`) |
+| `--token <token>` | Gateway token (if required) |
+| `--password <password>` | Gateway password (if required) |
+| `--session <key>` | Session key (default: `main`, or `global` when scope is global) |
+| `--deliver` | Deliver assistant replies to the provider (default off) |
+| `--thinking <level>` | Override thinking level for sends |
+| `--timeout-ms <ms>` | Agent timeout in ms (defaults to `agents.defaults.timeoutSeconds`) |
+| `--history-limit <n>` | History entries to load (default 200) |
+
+## Connection details
+
+- The TUI registers with the Gateway as `mode: "tui"`
+- Reconnects show a system message; event gaps are surfaced in the log
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No output after sending a message">
+    - Run `/status` in the TUI to confirm the Gateway is connected and idle/busy
+    - Check the Gateway logs: `moltbot logs --follow`
+    - Confirm the agent can run: `moltbot status` and `moltbot models status`
+    - If you expect messages in a chat channel, enable delivery (`/deliver on` or `--deliver`)
+  </Accordion>
+  <Accordion title="Disconnected">
+    Ensure the Gateway is running and your `--url/--token/--password` are correct.
+  </Accordion>
+  <Accordion title="No agents in picker">
+    Check `moltbot agents list` and your routing config.
+  </Accordion>
+  <Accordion title="Empty session picker">
+    You might be in global scope or have no sessions yet.
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Moltbot Overview" icon="robot" href="/moltbot">
+    Introduction to Moltbot
+  </Card>
+  <Card title="Environment Variables" icon="sliders" href="/moltbot/environment">
+    Configure your setup
+  </Card>
+  <Card title="Debugging" icon="bug" href="/moltbot/debugging">
+    Debug connection issues
+  </Card>
+  <Card title="Logging" icon="file-lines" href="/moltbot/logging">
+    View logs and diagnostics
+  </Card>
+</CardGroup>

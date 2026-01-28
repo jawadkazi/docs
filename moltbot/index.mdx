@@ -1,0 +1,167 @@
+---
+title: "Moltbot"
+description: "Any OS + WhatsApp/Telegram/Discord/iMessage gateway for AI agents"
+icon: "robot"
+---
+
+<img
+  src="/images/whatsapp-clawd.jpg"
+  alt="Moltbot"
+  width="420"
+  style={{ display: 'block', margin: '0 auto' }}
+/>
+
+Moltbot bridges WhatsApp (via WhatsApp Web / Baileys), Telegram (Bot API / grammY), Discord (Bot API / channels.discord.js), and iMessage (imsg CLI) to coding agents like [Pi](https://github.com/badlogic/pi-mono). Plugins add Mattermost (Bot API + WebSocket) and more.
+
+Send a message, get an agent response — from your pocket.
+
+<CardGroup cols={2}>
+  <Card title="GitHub" icon="github" href="https://github.com/moltbot/moltbot">
+    View source code
+  </Card>
+  <Card title="Releases" icon="tag" href="https://github.com/moltbot/moltbot/releases">
+    Download latest version
+  </Card>
+</CardGroup>
+
+## How it works
+
+```
+WhatsApp / Telegram / Discord / iMessage (+ plugins)
+        │
+        ▼
+  ┌───────────────────────────┐
+  │          Gateway          │  ws://127.0.0.1:18789 (loopback-only)
+  │     (single source)       │
+  │                           │  http://<gateway-host>:18793
+  │                           │    /__moltbot__/canvas/ (Canvas host)
+  └───────────┬───────────────┘
+              │
+              ├─ Pi agent (RPC)
+              ├─ CLI (moltbot …)
+              ├─ Chat UI (SwiftUI)
+              ├─ macOS app (Moltbot.app)
+              ├─ iOS node via Gateway WS + pairing
+              └─ Android node via Gateway WS + pairing
+```
+
+Most operations flow through the **Gateway** (`moltbot gateway`), a single long-running process that owns channel connections and the WebSocket control plane.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="WhatsApp Integration" icon="whatsapp">
+    Uses Baileys for WhatsApp Web protocol
+  </Card>
+  <Card title="Telegram Bot" icon="telegram">
+    DMs + groups via grammY
+  </Card>
+  <Card title="Discord Bot" icon="discord">
+    DMs + guild channels via channels.discord.js
+  </Card>
+  <Card title="iMessage" icon="message">
+    Local imsg CLI integration (macOS)
+  </Card>
+  <Card title="Agent Bridge" icon="robot">
+    Pi (RPC mode) with tool streaming
+  </Card>
+  <Card title="Multi-Agent Routing" icon="route">
+    Route provider accounts/peers to isolated agents
+  </Card>
+  <Card title="Media Support" icon="photo-film">
+    Send and receive images, audio, documents
+  </Card>
+  <Card title="Voice Notes" icon="microphone">
+    Optional transcription hook
+  </Card>
+</CardGroup>
+
+## Quick start
+
+<Info>Runtime requirement: **Node ≥ 22**</Info>
+
+<Steps>
+  <Step title="Install Moltbot">
+    ```bash
+    # Recommended: global install (npm/pnpm)
+    npm install -g moltbot@latest
+    # or: pnpm add -g moltbot@latest
+    ```
+  </Step>
+  <Step title="Onboard and install the service">
+    ```bash
+    moltbot onboard --install-daemon
+    ```
+  </Step>
+  <Step title="Pair WhatsApp Web">
+    ```bash
+    moltbot channels login
+    ```
+  </Step>
+  <Step title="Start the Gateway">
+    ```bash
+    moltbot gateway --port 18789
+    ```
+  </Step>
+</Steps>
+
+### From source (development)
+
+```bash
+git clone https://github.com/moltbot/moltbot.git
+cd moltbot
+pnpm install
+pnpm ui:build # auto-installs UI deps on first run
+pnpm build
+moltbot onboard --install-daemon
+```
+
+### Send a test message
+
+```bash
+moltbot message send --target +15555550123 --message "Hello from Moltbot"
+```
+
+## Configuration
+
+Config lives at `~/.clawdbot/moltbot.json`.
+
+<Tip>
+If you **do nothing**, Moltbot uses the bundled Pi binary in RPC mode with per-sender sessions.
+</Tip>
+
+Example configuration:
+
+```json
+{
+  "channels": {
+    "whatsapp": {
+      "allowFrom": ["+15555550123"],
+      "groups": { "*": { "requireMention": true } }
+    }
+  },
+  "messages": { 
+    "groupChat": { 
+      "mentionPatterns": ["@clawd"] 
+    } 
+  }
+}
+```
+
+## Network model
+
+- **One Gateway per host (recommended)**: it is the only process allowed to own the WhatsApp Web session.
+- **Loopback-first**: Gateway WS defaults to `ws://127.0.0.1:18789`.
+- **Nodes**: connect to the Gateway WebSocket (LAN/tailnet/SSH as needed).
+- **Canvas host**: HTTP file server on `canvasHost.port` (default `18793`).
+- **Remote use**: SSH tunnel or tailnet/VPN.
+
+## Credits
+
+- **Peter Steinberger** ([@steipete](https://twitter.com/steipete)) — Creator
+- **Mario Zechner** ([@badlogicgames](https://twitter.com/badlogicgames)) — Pi creator
+- **Clawd** — The space lobster who demanded a better name
+
+## License
+
+MIT — Free as a lobster in the ocean 🦞

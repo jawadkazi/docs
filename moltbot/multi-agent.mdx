@@ -1,0 +1,321 @@
+---
+title: "Multi-Agent Configuration"
+description: "Per-agent sandbox and tool restrictions for multi-agent setups"
+icon: "users"
+---
+
+Each agent in a multi-agent setup can have its own sandbox configuration and tool restrictions. This allows you to run multiple agents with different security profiles.
+
+## Overview
+
+<CardGroup cols={3}>
+  <Card title="Personal Assistant" icon="user">
+    Full access, no sandbox
+  </Card>
+  <Card title="Family/Work Agents" icon="users">
+    Restricted tools
+  </Card>
+  <Card title="Public-Facing Agents" icon="globe">
+    Full sandbox isolation
+  </Card>
+</CardGroup>
+
+## Configuration examples
+
+### Personal + Restricted Family Agent
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Personal Assistant",
+        "workspace": "~/clawd",
+        "sandbox": { "mode": "off" }
+      },
+      {
+        "id": "family",
+        "name": "Family Bot",
+        "workspace": "~/clawd-family",
+        "sandbox": {
+          "mode": "all",
+          "scope": "agent"
+        },
+        "tools": {
+          "allow": ["read"],
+          "deny": ["exec", "write", "edit", "apply_patch", "process", "browser"]
+        }
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "agentId": "family",
+      "match": {
+        "provider": "whatsapp",
+        "accountId": "*",
+        "peer": {
+          "kind": "group",
+          "id": "120363424282127706@g.us"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Result:**
+- `main` agent: Runs on host, full tool access
+- `family` agent: Runs in Docker (one container per agent), only `read` tool
+
+### Work Agent with Shared Sandbox
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "personal",
+        "workspace": "~/clawd-personal",
+        "sandbox": { "mode": "off" }
+      },
+      {
+        "id": "work",
+        "workspace": "~/clawd-work",
+        "sandbox": {
+          "mode": "all",
+          "scope": "shared",
+          "workspaceRoot": "/tmp/work-sandboxes"
+        },
+        "tools": {
+          "allow": ["read", "write", "apply_patch", "exec"],
+          "deny": ["browser", "gateway", "discord"]
+        }
+      }
+    ]
+  }
+}
+```
+
+### Global coding profile + messaging-only agent
+
+```json
+{
+  "tools": { "profile": "coding" },
+  "agents": {
+    "list": [
+      {
+        "id": "support",
+        "tools": { "profile": "messaging", "allow": ["slack"] }
+      }
+    ]
+  }
+}
+```
+
+**Result:**
+- Default agents get coding tools
+- `support` agent is messaging-only (+ Slack tool)
+
+## Configuration precedence
+
+When both global (`agents.defaults.*`) and agent-specific (`agents.list[].*`) configs exist:
+
+### Sandbox config
+
+Agent-specific settings override global:
+
+| Priority | Setting |
+|----------|---------|
+| 1 (highest) | `agents.list[].sandbox.mode` |
+| 2 | `agents.defaults.sandbox.mode` |
+
+<Note>
+`agents.list[].sandbox.{docker,browser,prune}.*` overrides `agents.defaults.sandbox.{docker,browser,prune}.*` for that agent (ignored when sandbox scope resolves to `"shared"`).
+</Note>
+
+### Tool restrictions
+
+The filtering order is:
+
+<Steps>
+  <Step title="Tool profile">
+    `tools.profile` or `agents.list[].tools.profile`
+  </Step>
+  <Step title="Provider tool profile">
+    `tools.byProvider[provider].profile`
+  </Step>
+  <Step title="Global tool policy">
+    `tools.allow` / `tools.deny`
+  </Step>
+  <Step title="Provider tool policy">
+    `tools.byProvider[provider].allow/deny`
+  </Step>
+  <Step title="Agent-specific tool policy">
+    `agents.list[].tools.allow/deny`
+  </Step>
+  <Step title="Agent provider policy">
+    `agents.list[].tools.byProvider[provider].allow/deny`
+  </Step>
+  <Step title="Sandbox tool policy">
+    `tools.sandbox.tools` or `agents.list[].tools.sandbox.tools`
+  </Step>
+  <Step title="Subagent tool policy">
+    `tools.subagents.tools` (if applicable)
+  </Step>
+</Steps>
+
+<Warning>
+Each level can further restrict tools, but **cannot grant back denied tools** from earlier levels.
+</Warning>
+
+## Tool groups (shorthands)
+
+Tool policies support `group:*` entries that expand to multiple concrete tools:
+
+| Group | Tools |
+|-------|-------|
+| `group:runtime` | `exec`, `bash`, `process` |
+| `group:fs` | `read`, `write`, `edit`, `apply_patch` |
+| `group:sessions` | `sessions_list`, `sessions_history`, `sessions_send`, `sessions_spawn`, `session_status` |
+| `group:memory` | `memory_search`, `memory_get` |
+| `group:ui` | `browser`, `canvas` |
+| `group:automation` | `cron`, `gateway` |
+| `group:messaging` | `message` |
+| `group:nodes` | `nodes` |
+| `group:moltbot` | All built-in Moltbot tools (excludes provider plugins) |
+
+## Tool restriction examples
+
+<Tabs>
+  <Tab title="Read-only Agent">
+    ```json
+    {
+      "tools": {
+        "allow": ["read"],
+        "deny": ["exec", "write", "edit", "apply_patch", "process"]
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Safe Execution">
+    ```json
+    {
+      "tools": {
+        "allow": ["read", "exec", "process"],
+        "deny": ["write", "edit", "apply_patch", "browser", "gateway"]
+      }
+    }
+    ```
+    No file modifications allowed.
+  </Tab>
+  <Tab title="Communication-only">
+    ```json
+    {
+      "tools": {
+        "allow": ["sessions_list", "sessions_send", "sessions_history", "session_status"],
+        "deny": ["exec", "write", "edit", "apply_patch", "read", "browser"]
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Elevated mode
+
+`tools.elevated` is the global baseline (sender-based allowlist). `agents.list[].tools.elevated` can further restrict elevated for specific agents (both must allow).
+
+### Mitigation patterns
+
+<AccordionGroup>
+  <Accordion title="Deny exec for untrusted agents">
+    ```json
+    {
+      "agents": {
+        "list": [{
+          "id": "untrusted",
+          "tools": { "deny": ["exec"] }
+        }]
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Disable elevated globally">
+    ```json
+    {
+      "tools": {
+        "elevated": { "enabled": false }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Disable elevated per agent">
+    ```json
+    {
+      "agents": {
+        "list": [{
+          "id": "sensitive",
+          "tools": { "elevated": { "enabled": false } }
+        }]
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Common pitfall: "non-main"
+
+<Warning>
+`agents.defaults.sandbox.mode: "non-main"` is based on `session.mainKey` (default `"main"`), not the agent id. Group/channel sessions always get their own keys, so they are treated as non-main and **will be sandboxed**.
+</Warning>
+
+If you want an agent to never sandbox, set `agents.list[].sandbox.mode: "off"`.
+
+## Testing
+
+After configuring multi-agent sandbox and tools:
+
+```bash
+# Check agent resolution
+moltbot agents list --bindings
+
+# Verify sandbox containers
+docker ps --filter "label=moltbot.sandbox=1"
+
+# Monitor logs
+tail -f ~/.clawdbot/logs/gateway.log | grep -E "routing|sandbox|tools"
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Agent not sandboxed despite mode: all">
+    - Check if there's a global `agents.defaults.sandbox.mode` that overrides it
+    - Agent-specific config takes precedence, so set `agents.list[].sandbox.mode: "all"`
+  </Accordion>
+  <Accordion title="Tools still available despite deny list">
+    - Check tool filtering order: global → agent → sandbox → subagent
+    - Each level can only further restrict, not grant back
+    - Verify with logs: `[tools] filtering tools for agent:${agentId}`
+  </Accordion>
+  <Accordion title="Container not isolated per agent">
+    - Set `scope: "agent"` in agent-specific sandbox config
+    - Default is `"session"` which creates one container per session
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Plugins" icon="puzzle-piece" href="/moltbot/plugins">
+    Extend with plugins
+  </Card>
+  <Card title="Environment Variables" icon="sliders" href="/moltbot/environment">
+    Configure your setup
+  </Card>
+  <Card title="Debugging" icon="bug" href="/moltbot/debugging">
+    Debug agent issues
+  </Card>
+</CardGroup>

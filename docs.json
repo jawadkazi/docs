@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Documentation",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -15,18 +15,11 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
+            "pages": ["index", "quickstart", "development"]
           },
           {
             "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
+            "pages": ["essentials/settings", "essentials/navigation"]
           },
           {
             "group": "Writing content",
@@ -52,9 +45,7 @@
         "groups": [
           {
             "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
+            "pages": ["api-reference/introduction"]
           },
           {
             "group": "Endpoint examples",
@@ -63,6 +54,42 @@
               "api-reference/endpoint/create",
               "api-reference/endpoint/delete",
               "api-reference/endpoint/webhook"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Moltbot",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["moltbot/index", "moltbot/environment", "moltbot/tui"]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "moltbot/debugging",
+              "moltbot/logging",
+              "moltbot/plugins",
+              "moltbot/multi-agent"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "moltbot/bedrock",
+              "moltbot/brave-search",
+              "moltbot/perplexity",
+              "moltbot/tts"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "moltbot/railway",
+              "moltbot/render",
+              "moltbot/northflank",
+              "moltbot/vps"
             ]
           }
         ]
@@ -102,15 +129,15 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {

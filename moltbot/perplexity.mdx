@@ -1,0 +1,93 @@
+---
+title: "Perplexity Sonar"
+description: "Perplexity Sonar setup for web_search"
+icon: "searchengin"
+---
+
+Moltbot can use Perplexity Sonar for the `web_search` tool. You can connect through Perplexity's direct API or via OpenRouter.
+
+## API options
+
+<Tabs>
+  <Tab title="Perplexity (direct)">
+    - **Base URL:** https://api.perplexity.ai
+    - **Environment variable:** `PERPLEXITY_API_KEY`
+  </Tab>
+  <Tab title="OpenRouter (alternative)">
+    - **Base URL:** https://openrouter.ai/api/v1
+    - **Environment variable:** `OPENROUTER_API_KEY`
+    - Supports prepaid/crypto credits
+  </Tab>
+</Tabs>
+
+## Config example
+
+```json
+{
+  "tools": {
+    "web": {
+      "search": {
+        "provider": "perplexity",
+        "perplexity": {
+          "apiKey": "pplx-...",
+          "baseUrl": "https://api.perplexity.ai",
+          "model": "perplexity/sonar-pro"
+        }
+      }
+    }
+  }
+}
+```
+
+## Switching from Brave
+
+If you're currently using Brave Search and want to switch to Perplexity:
+
+```json
+{
+  "tools": {
+    "web": {
+      "search": {
+        "provider": "perplexity",
+        "perplexity": {
+          "apiKey": "pplx-...",
+          "baseUrl": "https://api.perplexity.ai"
+        }
+      }
+    }
+  }
+}
+```
+
+<Tip>
+If both `PERPLEXITY_API_KEY` and `OPENROUTER_API_KEY` are set, set `tools.web.search.perplexity.baseUrl` (or `tools.web.search.perplexity.apiKey`) to disambiguate.
+</Tip>
+
+## Automatic provider detection
+
+If no base URL is set, Moltbot chooses a default based on the API key source:
+
+| Key Format | Provider | Base URL |
+|------------|----------|----------|
+| `PERPLEXITY_API_KEY` or `pplx-...` | Perplexity | `https://api.perplexity.ai` |
+| `OPENROUTER_API_KEY` or `sk-or-...` | OpenRouter | `https://openrouter.ai/api/v1` |
+| Unknown key formats | OpenRouter | `https://openrouter.ai/api/v1` (safe fallback) |
+
+## Available models
+
+| Model | Description |
+|-------|-------------|
+| `perplexity/sonar` | Fast Q&A with web search |
+| `perplexity/sonar-pro` | Multi-step reasoning + web search **(default)** |
+| `perplexity/sonar-reasoning-pro` | Deep research |
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Brave Search" icon="magnifying-glass" href="/moltbot/brave-search">
+    Alternative web search provider
+  </Card>
+  <Card title="Environment Variables" icon="sliders" href="/moltbot/environment">
+    Configure API keys via environment
+  </Card>
+</CardGroup>

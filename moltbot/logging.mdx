@@ -1,0 +1,275 @@
+---
+title: "Logging"
+description: "Logging overview: file logs, console output, CLI tailing, and the Control UI"
+icon: "file-lines"
+---
+
+Moltbot logs in two places:
+
+- **File logs** (JSON lines) written by the Gateway.
+- **Console output** shown in terminals and the Control UI.
+
+## Where logs live
+
+By default, the Gateway writes a rolling log file under:
+
+```
+/tmp/moltbot/moltbot-YYYY-MM-DD.log
+```
+
+The date uses the gateway host's local timezone.
+
+You can override this in `~/.clawdbot/moltbot.json`:
+
+```json
+{
+  "logging": {
+    "file": "/path/to/moltbot.log"
+  }
+}
+```
+
+## How to read logs
+
+### CLI: live tail (recommended)
+
+Use the CLI to tail the gateway log file via RPC:
+
+```bash
+moltbot logs --follow
+```
+
+<Tabs>
+  <Tab title="TTY sessions">
+    Pretty, colorized, structured log lines.
+  </Tab>
+  <Tab title="Non-TTY sessions">
+    Plain text output.
+  </Tab>
+  <Tab title="JSON mode">
+    Line-delimited JSON (one log event per line) with `--json` flag.
+  </Tab>
+</Tabs>
+
+**Additional flags:**
+- `--json`: line-delimited JSON (one log event per line)
+- `--plain`: force plain text in TTY sessions
+- `--no-color`: disable ANSI colors
+
+In JSON mode, the CLI emits `type`-tagged objects:
+
+| Type | Description |
+|------|-------------|
+| `meta` | Stream metadata (file, cursor, size) |
+| `log` | Parsed log entry |
+| `notice` | Truncation / rotation hints |
+| `raw` | Unparsed log line |
+
+<Tip>
+If the Gateway is unreachable, the CLI prints a short hint to run `moltbot doctor`.
+</Tip>
+
+### Control UI (web)
+
+The Control UI's **Logs** tab tails the same file using `logs.tail`.
+
+### Channel-only logs
+
+To filter channel activity (WhatsApp/Telegram/etc), use:
+
+```bash
+moltbot channels logs --channel whatsapp
+```
+
+## Log formats
+
+### File logs (JSONL)
+
+Each line in the log file is a JSON object. The CLI and Control UI parse these entries to render structured output (time, level, subsystem, message).
+
+### Console output
+
+Console logs are **TTY-aware** and formatted for readability:
+
+- Subsystem prefixes (e.g. `gateway/channels/whatsapp`)
+- Level coloring (info/warn/error)
+- Optional compact or JSON mode
+
+Console formatting is controlled by `logging.consoleStyle`.
+
+## Configuring logging
+
+All logging configuration lives under `logging` in `~/.clawdbot/moltbot.json`.
+
+```json
+{
+  "logging": {
+    "level": "info",
+    "file": "/tmp/moltbot/moltbot-YYYY-MM-DD.log",
+    "consoleLevel": "info",
+    "consoleStyle": "pretty",
+    "redactSensitive": "tools",
+    "redactPatterns": [
+      "sk-.*"
+    ]
+  }
+}
+```
+
+### Log levels
+
+| Setting | Purpose |
+|---------|---------|
+| `logging.level` | File logs (JSONL) level |
+| `logging.consoleLevel` | Console verbosity level |
+
+<Note>
+`--verbose` only affects console output; it does not change file log levels.
+</Note>
+
+### Console styles
+
+`logging.consoleStyle` options:
+
+| Style | Description |
+|-------|-------------|
+| `pretty` | Human-friendly, colored, with timestamps |
+| `compact` | Tighter output (best for long sessions) |
+| `json` | JSON per line (for log processors) |
+
+### Redaction
+
+Tool summaries can redact sensitive tokens before they hit the console:
+
+- `logging.redactSensitive`: `off` | `tools` (default: `tools`)
+- `logging.redactPatterns`: list of regex strings to override the default set
+
+<Warning>
+Redaction affects **console output only** and does not alter file logs.
+</Warning>
+
+## Diagnostics + OpenTelemetry
+
+Diagnostics are structured, machine-readable events for model runs **and** message-flow telemetry (webhooks, queueing, session state). They do **not** replace logs; they exist to feed metrics, traces, and other exporters.
+
+### OpenTelemetry vs OTLP
+
+| Term | Description |
+|------|-------------|
+| **OpenTelemetry (OTel)** | The data model + SDKs for traces, metrics, and logs |
+| **OTLP** | The wire protocol used to export OTel data to a collector/backend |
+
+Moltbot exports via **OTLP/HTTP (protobuf)** today.
+
+### Signals exported
+
+- **Metrics**: counters + histograms (token usage, message flow, queueing)
+- **Traces**: spans for model usage + webhook/message processing
+- **Logs**: exported over OTLP when `diagnostics.otel.logs` is enabled
+
+### Enable diagnostics (no exporter)
+
+Use this if you want diagnostics events available to plugins or custom sinks:
+
+```json
+{
+  "diagnostics": {
+    "enabled": true
+  }
+}
+```
+
+### Diagnostics flags (targeted logs)
+
+Use flags to turn on extra, targeted debug logs without raising `logging.level`. Flags are case-insensitive and support wildcards (e.g. `telegram.*` or `*`).
+
+```json
+{
+  "diagnostics": {
+    "flags": ["telegram.http"]
+  }
+}
+```
+
+Env override (one-off):
+
+```bash
+CLAWDBOT_DIAGNOSTICS=telegram.http,telegram.payload
+```
+
+### Export to OpenTelemetry
+
+Diagnostics can be exported via the `diagnostics-otel` plugin (OTLP/HTTP). This works with any OpenTelemetry collector/backend that accepts OTLP/HTTP.
+
+```json
+{
+  "plugins": {
+    "allow": ["diagnostics-otel"],
+    "entries": {
+      "diagnostics-otel": {
+        "enabled": true
+      }
+    }
+  },
+  "diagnostics": {
+    "enabled": true,
+    "otel": {
+      "enabled": true,
+      "endpoint": "http://otel-collector:4318",
+      "protocol": "http/protobuf",
+      "serviceName": "moltbot-gateway",
+      "traces": true,
+      "metrics": true,
+      "logs": true,
+      "sampleRate": 0.2,
+      "flushIntervalMs": 60000
+    }
+  }
+}
+```
+
+<Info>
+You can also enable the plugin with `moltbot plugins enable diagnostics-otel`.
+</Info>
+
+### Exported metrics
+
+<AccordionGroup>
+  <Accordion title="Model usage">
+    - `moltbot.tokens` (counter)
+    - `moltbot.cost.usd` (counter)
+    - `moltbot.run.duration_ms` (histogram)
+    - `moltbot.context.tokens` (histogram)
+  </Accordion>
+  <Accordion title="Message flow">
+    - `moltbot.webhook.received` (counter)
+    - `moltbot.webhook.error` (counter)
+    - `moltbot.webhook.duration_ms` (histogram)
+    - `moltbot.message.queued` (counter)
+    - `moltbot.message.processed` (counter)
+    - `moltbot.message.duration_ms` (histogram)
+  </Accordion>
+  <Accordion title="Queues + sessions">
+    - `moltbot.queue.lane.enqueue` (counter)
+    - `moltbot.queue.lane.dequeue` (counter)
+    - `moltbot.queue.depth` (histogram)
+    - `moltbot.queue.wait_ms` (histogram)
+    - `moltbot.session.state` (counter)
+    - `moltbot.session.stuck` (counter)
+    - `moltbot.run.attempt` (counter)
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting tips
+
+<CardGroup cols={2}>
+  <Card title="Gateway not reachable?" icon="circle-exclamation">
+    Run `moltbot doctor` first.
+  </Card>
+  <Card title="Logs empty?" icon="file-circle-question">
+    Check that the Gateway is running and writing to the file path in `logging.file`.
+  </Card>
+  <Card title="Need more detail?" icon="magnifying-glass">
+    Set `logging.level` to `debug` or `trace` and retry.
+  </Card>
+</CardGroup>

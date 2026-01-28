@@ -1,0 +1,179 @@
+---
+title: "Deploy on Railway"
+description: "Deploy Moltbot on Railway with a one-click template and finish setup in your browser"
+icon: "train"
+---
+
+Deploy Moltbot on Railway with a one-click template and finish setup in your browser. This is the easiest "no terminal on the server" path: Railway runs the Gateway for you, and you configure everything via the `/setup` web wizard.
+
+## Quick checklist
+
+<Steps>
+  <Step title="Deploy on Railway">
+    Click the deploy button below
+  </Step>
+  <Step title="Add a Volume">
+    Mount at `/data`
+  </Step>
+  <Step title="Set Variables">
+    At minimum, set `SETUP_PASSWORD`
+  </Step>
+  <Step title="Enable HTTP Proxy">
+    On port `8080`
+  </Step>
+  <Step title="Complete Setup">
+    Open `https://<your-railway-domain>/setup` and finish the wizard
+  </Step>
+</Steps>
+
+## One-click deploy
+
+<Card title="Deploy on Railway" icon="rocket" href="https://railway.com/deploy/moltbot-railway-template">
+  Click to deploy Moltbot on Railway
+</Card>
+
+After deploy, find your public URL in **Railway → your service → Settings → Domains**.
+
+Railway will either:
+- Give you a generated domain (often `https://<something>.up.railway.app`), or
+- Use your custom domain if you attached one
+
+Then open:
+- `https://<your-railway-domain>/setup` — setup wizard (password protected)
+- `https://<your-railway-domain>/moltbot` — Control UI
+
+## What you get
+
+<CardGroup cols={2}>
+  <Card title="Hosted Gateway" icon="server">
+    Moltbot Gateway + Control UI
+  </Card>
+  <Card title="Web Setup Wizard" icon="wand-magic-sparkles">
+    At `/setup` (no terminal commands)
+  </Card>
+  <Card title="Persistent Storage" icon="hard-drive">
+    Via Railway Volume (`/data`)
+  </Card>
+  <Card title="Backup Export" icon="download">
+    At `/setup/export` for migration
+  </Card>
+</CardGroup>
+
+## Required Railway settings
+
+### Public Networking
+
+Enable **HTTP Proxy** for the service.
+
+| Setting | Value |
+|---------|-------|
+| Port | `8080` |
+
+### Volume (required)
+
+Attach a volume mounted at:
+
+| Setting | Value |
+|---------|-------|
+| Mount path | `/data` |
+
+### Variables
+
+Set these variables on the service:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SETUP_PASSWORD` | ✅ Yes | Password for `/setup` wizard |
+| `PORT` | ✅ Yes | Must be `8080` (match Public Networking) |
+| `CLAWDBOT_STATE_DIR` | Recommended | `/data/.clawdbot` |
+| `CLAWDBOT_WORKSPACE_DIR` | Recommended | `/data/workspace` |
+| `CLAWDBOT_GATEWAY_TOKEN` | Recommended | Treat as an admin secret |
+
+## Setup flow
+
+<Steps>
+  <Step title="Visit the setup wizard">
+    Go to `https://<your-railway-domain>/setup` and enter your `SETUP_PASSWORD`.
+  </Step>
+  <Step title="Choose a model provider">
+    Select a model/auth provider and paste your API key.
+  </Step>
+  <Step title="Add chat tokens (optional)">
+    Add Telegram/Discord/Slack tokens if needed.
+  </Step>
+  <Step title="Run setup">
+    Click **Run setup**.
+  </Step>
+</Steps>
+
+<Tip>
+If Telegram DMs are set to pairing, the setup wizard can approve the pairing code.
+</Tip>
+
+## Getting chat tokens
+
+<Tabs>
+  <Tab title="Telegram">
+    <Steps>
+      <Step title="Message BotFather">
+        Open Telegram and message `@BotFather`
+      </Step>
+      <Step title="Create a new bot">
+        Run `/newbot`
+      </Step>
+      <Step title="Copy the token">
+        Copy the token (looks like `123456789:AA...`)
+      </Step>
+      <Step title="Paste into setup">
+        Paste it into `/setup`
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Discord">
+    <Steps>
+      <Step title="Create application">
+        Go to [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**
+      </Step>
+      <Step title="Add bot">
+        Go to **Bot** → **Add Bot**
+      </Step>
+      <Step title="Enable Message Content Intent">
+        Under **Bot → Privileged Gateway Intents**, enable **MESSAGE CONTENT INTENT**
+        
+        <Warning>This is required or the bot will crash on startup!</Warning>
+      </Step>
+      <Step title="Copy token">
+        Copy the **Bot Token** and paste into `/setup`
+      </Step>
+      <Step title="Invite to server">
+        Use OAuth2 URL Generator with scopes: `bot`, `applications.commands`
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Backups & migration
+
+Download a backup at:
+
+```
+https://<your-railway-domain>/setup/export
+```
+
+<Info>
+This exports your Moltbot state + workspace so you can migrate to another host without losing config or memory.
+</Info>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Deploy on Render" icon="window" href="/moltbot/render">
+    Alternative deployment option
+  </Card>
+  <Card title="Deploy on Northflank" icon="cloud" href="/moltbot/northflank">
+    Another one-click deployment
+  </Card>
+  <Card title="VPS Hosting" icon="server" href="/moltbot/vps">
+    Self-hosted options
+  </Card>
+</CardGroup>

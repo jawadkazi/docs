@@ -1,0 +1,101 @@
+---
+title: "VPS Hosting"
+description: "VPS hosting hub for Moltbot (Oracle/Fly/Hetzner/GCP/exe.dev)"
+icon: "server"
+---
+
+This hub links to the supported VPS/hosting guides and explains how cloud deployments work at a high level.
+
+## Pick a provider
+
+<CardGroup cols={2}>
+  <Card title="Railway" icon="train" href="/moltbot/railway">
+    One-click + browser setup
+  </Card>
+  <Card title="Northflank" icon="cloud" href="/moltbot/northflank">
+    One-click + browser setup
+  </Card>
+  <Card title="Render" icon="window" href="/moltbot/render">
+    Infrastructure as Code deployment
+  </Card>
+  <Card title="Oracle Cloud" icon="cloud" href="https://github.com/moltbot/moltbot/wiki/Oracle">
+    Always Free tier (ARM, $0/month)
+  </Card>
+  <Card title="Fly.io" icon="plane" href="https://github.com/moltbot/moltbot/wiki/Fly">
+    Global edge deployment
+  </Card>
+  <Card title="Hetzner" icon="server" href="https://github.com/moltbot/moltbot/wiki/Hetzner">
+    Docker-based deployment
+  </Card>
+  <Card title="GCP" icon="google" href="https://github.com/moltbot/moltbot/wiki/GCP">
+    Compute Engine deployment
+  </Card>
+  <Card title="exe.dev" icon="globe" href="https://github.com/moltbot/moltbot/wiki/exe-dev">
+    VM + HTTPS proxy
+  </Card>
+</CardGroup>
+
+<Tip>
+**AWS (EC2/Lightsail/free tier)** also works well. See [this video guide](https://x.com/techfrenAJ/status/2014934471095812547) for a walkthrough.
+</Tip>
+
+## How cloud setups work
+
+<Steps>
+  <Step title="Gateway runs on the VPS">
+    The Gateway owns state + workspace on the server.
+  </Step>
+  <Step title="Connect remotely">
+    Connect from your laptop/phone via the **Control UI** or **Tailscale/SSH**.
+  </Step>
+  <Step title="Backup regularly">
+    Treat the VPS as the source of truth and **back up** the state + workspace.
+  </Step>
+</Steps>
+
+### Security recommendations
+
+<Warning>
+**Secure default:** Keep the Gateway on loopback and access it via SSH tunnel or Tailscale Serve. If you bind to `lan`/`tailnet`, require `gateway.auth.token` or `gateway.auth.password`.
+</Warning>
+
+## Network configuration
+
+| Binding Mode | Security | Use Case |
+|--------------|----------|----------|
+| Loopback (default) | Most secure | Access via SSH tunnel |
+| LAN | Requires auth | Local network access |
+| Tailnet | Requires auth | VPN/Tailscale access |
+
+## Using nodes with a VPS
+
+You can keep the Gateway in the cloud and pair **nodes** on your local devices (Mac/iOS/Android/headless). Nodes provide local screen/camera/canvas and `system.run` capabilities while the Gateway stays in the cloud.
+
+<CardGroup cols={2}>
+  <Card title="Nodes Overview" icon="laptop" href="https://github.com/moltbot/moltbot/wiki/Nodes">
+    Learn about node architecture
+  </Card>
+  <Card title="iOS Node" icon="apple" href="https://github.com/moltbot/moltbot/wiki/iOS">
+    Set up iOS as a node
+  </Card>
+  <Card title="Android Node" icon="android" href="https://github.com/moltbot/moltbot/wiki/Android">
+    Set up Android as a node
+  </Card>
+  <Card title="macOS Node" icon="desktop" href="https://github.com/moltbot/moltbot/wiki/macOS">
+    Set up macOS as a node
+  </Card>
+</CardGroup>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="sliders" href="/moltbot/environment">
+    Configure your deployment
+  </Card>
+  <Card title="Logging" icon="file-lines" href="/moltbot/logging">
+    Monitor your VPS deployment
+  </Card>
+  <Card title="Debugging" icon="bug" href="/moltbot/debugging">
+    Troubleshoot issues
+  </Card>
+</CardGroup>

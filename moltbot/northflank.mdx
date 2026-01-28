@@ -1,0 +1,139 @@
+---
+title: "Deploy on Northflank"
+description: "Deploy Moltbot on Northflank with a one-click template and finish setup in your browser"
+icon: "cloud"
+---
+
+Deploy Moltbot on Northflank with a one-click template and finish setup in your browser. This is the easiest "no terminal on the server" path: Northflank runs the Gateway for you, and you configure everything via the `/setup` web wizard.
+
+## How to get started
+
+<Steps>
+  <Step title="Open the template">
+    Click [Deploy Moltbot](https://northflank.com/stacks/deploy-moltbot) to open the template.
+  </Step>
+  <Step title="Create an account">
+    Create an [account on Northflank](https://app.northflank.com/signup) if you don't already have one.
+  </Step>
+  <Step title="Deploy">
+    Click **Deploy Moltbot now**.
+  </Step>
+  <Step title="Set environment variable">
+    Set the required environment variable: `SETUP_PASSWORD`.
+  </Step>
+  <Step title="Deploy stack">
+    Click **Deploy stack** to build and run the Moltbot template.
+  </Step>
+  <Step title="View resources">
+    Wait for the deployment to complete, then click **View resources**.
+  </Step>
+  <Step title="Open the service">
+    Open the Moltbot service.
+  </Step>
+  <Step title="Complete setup">
+    Open the public Moltbot URL and complete setup at `/setup`.
+  </Step>
+  <Step title="Access Control UI">
+    Open the Control UI at `/moltbot`.
+  </Step>
+</Steps>
+
+## One-click deploy
+
+<Card title="Deploy on Northflank" icon="rocket" href="https://northflank.com/stacks/deploy-moltbot">
+  Click to deploy Moltbot on Northflank
+</Card>
+
+## What you get
+
+<CardGroup cols={2}>
+  <Card title="Hosted Gateway" icon="server">
+    Moltbot Gateway + Control UI
+  </Card>
+  <Card title="Web Setup Wizard" icon="wand-magic-sparkles">
+    At `/setup` (no terminal commands)
+  </Card>
+  <Card title="Persistent Storage" icon="hard-drive">
+    Via Northflank Volume (`/data`) — survives redeploys
+  </Card>
+</CardGroup>
+
+## Setup flow
+
+<Steps>
+  <Step title="Visit the setup wizard">
+    Go to `https://<your-northflank-domain>/setup` and enter your `SETUP_PASSWORD`.
+  </Step>
+  <Step title="Choose a model provider">
+    Select a model/auth provider and paste your API key.
+  </Step>
+  <Step title="Add chat tokens (optional)">
+    Add Telegram/Discord/Slack tokens if needed.
+  </Step>
+  <Step title="Run setup">
+    Click **Run setup**.
+  </Step>
+  <Step title="Open Control UI">
+    Access the Control UI at `https://<your-northflank-domain>/moltbot`
+  </Step>
+</Steps>
+
+<Tip>
+If Telegram DMs are set to pairing, the setup wizard can approve the pairing code.
+</Tip>
+
+## Getting chat tokens
+
+<Tabs>
+  <Tab title="Telegram">
+    <Steps>
+      <Step title="Message BotFather">
+        Open Telegram and message `@BotFather`
+      </Step>
+      <Step title="Create a new bot">
+        Run `/newbot`
+      </Step>
+      <Step title="Copy the token">
+        Copy the token (looks like `123456789:AA...`)
+      </Step>
+      <Step title="Paste into setup">
+        Paste it into `/setup`
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Discord">
+    <Steps>
+      <Step title="Create application">
+        Go to [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**
+      </Step>
+      <Step title="Add bot">
+        Go to **Bot** → **Add Bot**
+      </Step>
+      <Step title="Enable Message Content Intent">
+        Under **Bot → Privileged Gateway Intents**, enable **MESSAGE CONTENT INTENT**
+        
+        <Warning>This is required or the bot will crash on startup!</Warning>
+      </Step>
+      <Step title="Copy token">
+        Copy the **Bot Token** and paste into `/setup`
+      </Step>
+      <Step title="Invite to server">
+        Use OAuth2 URL Generator with scopes: `bot`, `applications.commands`
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Deploy on Railway" icon="train" href="/moltbot/railway">
+    Alternative one-click deployment
+  </Card>
+  <Card title="Deploy on Render" icon="window" href="/moltbot/render">
+    Deploy with Render Blueprints
+  </Card>
+  <Card title="VPS Hosting" icon="server" href="/moltbot/vps">
+    Self-hosted options
+  </Card>
+</CardGroup>

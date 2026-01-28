@@ -1,0 +1,351 @@
+---
+title: "Plugins"
+description: "Extend Moltbot with plugins for channels, providers, hooks, and more"
+icon: "puzzle-piece"
+---
+
+Moltbot's plugin system lets you extend the Gateway with new channels, auth providers, tools, CLI commands, and background services.
+
+## Quick start
+
+<Steps>
+  <Step title="List available plugins">
+    ```bash
+    moltbot plugins list
+    ```
+  </Step>
+  <Step title="Enable a plugin">
+    ```bash
+    moltbot plugins enable <plugin-id>
+    ```
+  </Step>
+  <Step title="Restart the Gateway">
+    Restart to load the newly enabled plugin.
+  </Step>
+</Steps>
+
+## Available plugins (official)
+
+| Plugin | Description |
+|--------|-------------|
+| `mattermost` | Mattermost channel (Bot API + WebSocket) |
+| `open-prose` | OpenProse skill pack + `/prose` slash command |
+| `diagnostics-otel` | OpenTelemetry metrics/traces exporter |
+| `voice-call` | Voice call support for Telegram |
+
+## Plugin discovery
+
+Moltbot discovers plugins from several sources:
+
+<AccordionGroup>
+  <Accordion title="Bundled plugins">
+    Ship with Moltbot under `extensions/`. Disabled by default.
+  </Accordion>
+  <Accordion title="npm packages">
+    Any npm package with a `moltbot.extensions` field in `package.json`.
+  </Accordion>
+  <Accordion title="Local directories">
+    Directories listed in `plugins.load.extraDirs`.
+  </Accordion>
+</AccordionGroup>
+
+### Precedence order
+
+1. Bundled (lowest priority)
+2. npm packages
+3. Local directories
+4. Explicit config entries (highest priority)
+
+## Configuration
+
+### Enable plugins
+
+```json
+{
+  "plugins": {
+    "allow": ["mattermost", "open-prose"],
+    "entries": {
+      "mattermost": {
+        "enabled": true
+      }
+    }
+  }
+}
+```
+
+### Per-plugin configuration
+
+Each plugin can have its own config block:
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "my-plugin": {
+        "enabled": true,
+        "env": {
+          "MY_CUSTOM_VAR": "value"
+        }
+      }
+    }
+  }
+}
+```
+
+### Extra directories
+
+Load plugins from additional directories:
+
+```json
+{
+  "plugins": {
+    "load": {
+      "extraDirs": ["~/my-plugins"]
+    }
+  }
+}
+```
+
+## Plugin slots (exclusive categories)
+
+Some plugin categories are exclusive—only one plugin can fill the slot at a time:
+
+| Slot | Description |
+|------|-------------|
+| `transcription` | Audio transcription provider |
+| `tts` | Text-to-speech provider |
+| `browser` | Browser automation backend |
+
+## CLI commands
+
+```bash
+# List all plugins
+moltbot plugins list
+
+# Show plugin info
+moltbot plugins info <plugin-id>
+
+# Enable a plugin
+moltbot plugins enable <plugin-id>
+
+# Disable a plugin
+moltbot plugins disable <plugin-id>
+
+# Install from npm
+moltbot plugins install <npm-spec>
+
+# Install from local path
+moltbot plugins install ./path/to/plugin
+```
+
+## Plugin API overview
+
+Plugins can register:
+
+<CardGroup cols={2}>
+  <Card title="Channels" icon="comments">
+    New messaging platforms
+  </Card>
+  <Card title="Auth providers" icon="key">
+    Model authentication flows
+  </Card>
+  <Card title="Hooks" icon="webhook">
+    Event handlers for lifecycle events
+  </Card>
+  <Card title="RPC methods" icon="server">
+    Custom Gateway RPC endpoints
+  </Card>
+  <Card title="CLI commands" icon="terminal">
+    Additional CLI subcommands
+  </Card>
+  <Card title="Auto-reply commands" icon="reply">
+    Slash commands in chat
+  </Card>
+  <Card title="Background services" icon="gear">
+    Long-running processes
+  </Card>
+  <Card title="Agent tools" icon="wrench">
+    Custom tools for agents
+  </Card>
+</CardGroup>
+
+## Creating a plugin
+
+### Directory structure
+
+```
+my-plugin/
+├── package.json
+├── PLUGIN.md          # Plugin documentation
+├── src/
+│   └── index.ts       # Plugin entry point
+└── dist/
+    └── index.js       # Compiled output
+```
+
+### package.json
+
+```json
+{
+  "name": "moltbot-my-plugin",
+  "version": "1.0.0",
+  "moltbot": {
+    "extensions": ["dist/index.js"]
+  }
+}
+```
+
+### Basic plugin structure
+
+```typescript
+import type { MoltbotPlugin } from 'moltbot';
+
+const plugin: MoltbotPlugin = {
+  id: 'my-plugin',
+  meta: {
+    id: 'my-plugin',
+    label: 'My Plugin',
+    selectionLabel: 'My Plugin',
+    docsPath: '/plugins/my-plugin',
+    blurb: 'A custom Moltbot plugin',
+    aliases: ['mp']
+  },
+  // ... plugin implementation
+};
+
+export default plugin;
+```
+
+## Registering a channel
+
+```typescript
+const myChannel: ChannelPlugin = {
+  id: 'my-channel',
+  meta: {
+    id: 'my-channel',
+    label: 'My Channel',
+    selectionLabel: 'My Channel',
+    docsPath: '/channels/my-channel',
+    blurb: 'Custom messaging channel',
+    aliases: ['mc']
+  },
+  capabilities: {
+    chatTypes: ['dm', 'group']
+  },
+  config: {
+    listAccountIds: async () => ['account-1'],
+    resolveAccount: async (id) => ({ id, label: 'Account 1' })
+  },
+  outbound: {
+    deliveryMode: 'immediate',
+    sendText: async (msg) => ({ ok: true })
+  }
+};
+```
+
+## Registering auto-reply commands
+
+```typescript
+const plugin: MoltbotPlugin = {
+  id: 'my-plugin',
+  commands: [
+    {
+      name: 'hello',
+      description: 'Say hello',
+      handler: async (ctx) => ({
+        text: 'Hello from my plugin!'
+      })
+    },
+    {
+      name: 'mode',
+      description: 'Set a mode',
+      acceptsArgs: true,
+      requireAuth: true,
+      handler: async (ctx) => {
+        const mode = ctx.args[0] ?? 'default';
+        return { text: `Mode set to: ${mode}` };
+      }
+    }
+  ]
+};
+```
+
+## Registering background services
+
+```typescript
+const plugin: MoltbotPlugin = {
+  id: 'my-plugin',
+  services: [
+    {
+      id: 'my-service',
+      start: async (ctx) => {
+        // Start background work
+      },
+      stop: async () => {
+        // Cleanup
+      }
+    }
+  ]
+};
+```
+
+## Control UI integration
+
+Plugins can expose configuration schemas for the Control UI:
+
+```typescript
+const plugin: MoltbotPlugin = {
+  id: 'my-plugin',
+  configSchema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      apiKey: { type: 'string' },
+      region: { type: 'string' }
+    }
+  },
+  uiHints: {
+    apiKey: { label: 'API Key', sensitive: true },
+    region: { label: 'Region', placeholder: 'us-east-1' }
+  }
+};
+```
+
+## Naming conventions
+
+- **npm packages**: Prefix with `moltbot-` (e.g., `moltbot-my-plugin`)
+- **Plugin IDs**: Use kebab-case (e.g., `my-plugin`)
+- **Bundled plugins**: Live under `extensions/`
+
+## Safety notes
+
+<Warning>
+- Plugins run with full Gateway privileges
+- Review third-party plugins before installing
+- Use tool allowlists to restrict what plugins can do
+- Keep plugins updated for security fixes
+</Warning>
+
+## Testing plugins
+
+```bash
+# Run with verbose logging
+CLAWDBOT_LOG_LEVEL=debug moltbot gateway
+
+# Check plugin loaded
+moltbot plugins info my-plugin
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Hooks" icon="webhook" href="/moltbot/hooks">
+    Event-based extensions
+  </Card>
+  <Card title="Environment Variables" icon="sliders" href="/moltbot/environment">
+    Configure plugin settings
+  </Card>
+  <Card title="Debugging" icon="bug" href="/moltbot/debugging">
+    Debug plugin issues
+  </Card>
+</CardGroup>
